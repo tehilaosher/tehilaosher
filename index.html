@@ -55,4 +55,90 @@
                 <label><input type="radio" name="gold" value="14" onchange="refresh()"><span class="opt-card">14K</span></label>
                 <label><input type="radio" name="gold" value="18" onchange="refresh()"><span class="opt-card">18K</span></label>
             </div>
-            <span class="section-title">
+            <span class="section-title">הנחיות AI (סגור ומאובטח)</span>
+            <textarea id="ai-text" placeholder="תארי ל-AI מה תרצי לשנות..."></textarea>
+            <button class="ai-btn" onclick="applyAI()">עדכן עיצוב מאובטח</button>
+            <div class="price-area">
+                <div class="final-price" id="total-val">₪ 0</div>
+                <button class="btn-order">הזמנה לייצור</button>
+            </div>
+        </div>
+        <div id="viz-box"></div>
+    </div>
+
+<script>
+    let activeType = '';
+    let currentThickness = 0.1;
+    let currentScale = 1.0;
+    const GOLD_PPG = { "9": 190, "14": 300, "18": 410 };
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const vizBox = document.getElementById('viz-box');
+    renderer.setSize(vizBox.clientWidth, vizBox.clientWidth); 
+    vizBox.appendChild(renderer.domElement);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+    const ringMat = new THREE.MeshStandardMaterial({color: 0xc5a059, metalness:0.9, roughness:0.1});
+    let jewelry = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.1, 16, 100), ringMat);
+    scene.add(jewelry); camera.position.z = 4;
+
+    function startDesign(type) {
+        activeType = type;
+        document.getElementById('home-screen').style.display = 'none';
+        document.getElementById('editor-screen').style.display = 'grid';
+        updateDynamicFields(type);
+        refresh();
+    }
+
+    function resetToHome() {
+        document.getElementById('home-screen').style.display = 'flex';
+        document.getElementById('editor-screen').style.display = 'none';
+    }
+
+    function updateDynamicFields(type) {
+        const fields = document.getElementById('dynamic-fields');
+        fields.innerHTML = `<span class="section-title">סגנון</span><div class="options-grid"><label><input type="radio" name="sub" checked onchange="refresh()"><span class="opt-card">קלאסי</span></label><label><input type="radio" name="sub" onchange="refresh()"><span class="opt-card">מודרני</span></label></div>`;
+    }
+
+    function refresh() {
+        const goldK = document.querySelector('input[name="gold"]:checked').value;
+        const baseWeights = { ring: 3.5, earrings: 5.5, necklace: 8, bracelet: 12 };
+        let adjWeight = baseWeights[activeType] * currentScale * (currentThickness / 0.1);
+        let total = (adjWeight * GOLD_PPG[goldK] + 1000) * 3;
+        document.getElementById('total-val').innerText = `₪${Math.round(total).toLocaleString()}`;
+    }
+
+    // פונקציית ה-AI המאובטחת
+    async function applyAI() {
+        const prompt = document.getElementById('ai-text').value;
+        if (!prompt) return alert("אנא תארי את השינוי");
+        vizBox.style.opacity = "0.5";
+        
+        try {
+            // קריאה ל-Serverless Function במקום ישירות ל-OpenAI
+            const response = await fetch('/.netlify/functions/ai-proxy', {
+                method: 'POST',
+                body: JSON.stringify({ prompt: prompt })
+            });
+            const result = await response.json();
+
+            if (result.color) ringMat.color.set(result.color);
+            currentThickness = result.thickness || 0.1;
+            currentScale = result.scale || 1.0;
+            jewelry.geometry.dispose();
+            jewelry.geometry = new THREE.TorusGeometry(0.7, currentThickness, 16, 100);
+            jewelry.scale.set(currentScale, currentScale, currentScale);
+            refresh();
+        } catch (e) {
+            alert("שגיאת אבטחה או תקשורת. ודאי שהגדרת את הכספת ב-Netlify.");
+        } finally {
+            vizBox.style.opacity = "1";
+        }
+    }
+
+    function animate() { requestAnimationFrame(animate); jewelry.rotation.y += 0.01; renderer.render(scene, camera); }
+    animate();
+</script>
+</body>
+</html>
