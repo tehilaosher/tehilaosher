@@ -7,78 +7,146 @@
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;400;600&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        :root { 
-            --gold: #c5a059; --gold-light: #e2c99d; --bg: #fdfbf8; 
-            --text: #1a1a1a; --white: #ffffff; --shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-        
-        body { 
-            margin: 0; background: linear-gradient(135deg, #fdfbf8 0%, #f5f0e8 100%);
-            color: var(--text); font-family: 'Assistant', sans-serif; overflow-x: hidden;
-            transition: direction 0.3s;
-        }
-
-        /* כפתור החלפת שפה */
-        .lang-switch {
-            position: fixed; top: 20px; right: 20px; z-index: 2000;
-            background: var(--white); border: 1px solid #ddd; padding: 8px 15px;
-            cursor: pointer; font-weight: 600; font-size: 0.8rem; letter-spacing: 1px;
-            box-shadow: var(--shadow);
-        }
-
-        /* אנימציות */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.8s ease-out forwards; }
-
-        /* דף הבית */
+        :root { --gold: #c5a059; --bg: #fdfbf8; --text: #1a1a1a; --white: #ffffff; --shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        body { margin: 0; background: linear-gradient(135deg, #fdfbf8 0%, #f5f0e8 100%); color: var(--text); font-family: 'Assistant', sans-serif; overflow-x: hidden; }
+        .lang-switch { position: fixed; top: 20px; right: 20px; z-index: 2000; background: var(--white); border: 1px solid #ddd; padding: 8px 15px; cursor: pointer; font-weight: 600; font-size: 0.8rem; box-shadow: var(--shadow); }
         #home-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 40px 20px; }
-        header { margin-bottom: 40px; }
-        h1 { font-family: 'Playfair Display'; font-size: clamp(2.5rem, 8vw, 4.5rem); margin: 0; font-weight: 400; }
-        .subtitle { letter-spacing: 4px; opacity: 0.6; font-size: 0.8rem; margin-top: 10px; text-transform: uppercase; }
+        h1 { font-family: 'Playfair Display'; font-size: clamp(2.5rem, 8vw, 4.5rem); margin: 0; }
         .slogan { font-family: 'Playfair Display'; font-style: italic; font-size: 1.1rem; margin-top: 15px; color: var(--gold); }
-
         .main-nav { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 800px; width: 100%; margin-top: 40px; }
         @media (max-width: 600px) { .main-nav { grid-template-columns: 1fr; } }
-
-        .category-card { 
-            background: var(--white); padding: 50px 20px; font-family: 'Playfair Display', serif; 
-            font-size: 1.6rem; cursor: pointer; transition: 0.4s; box-shadow: var(--shadow);
-            border-radius: 2px;
-        }
-        .category-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.08); color: var(--gold); }
-
-        /* ממשק עריכה */
+        .category-card { background: var(--white); padding: 50px 20px; font-family: 'Playfair Display', serif; font-size: 1.6rem; cursor: pointer; transition: 0.4s; box-shadow: var(--shadow); }
         #editor-screen { display: none; padding: 40px 20px; max-width: 1300px; margin: 0 auto; grid-template-columns: 420px 1fr; gap: 50px; }
-        @media (max-width: 1000px) {
-            #editor-screen { grid-template-columns: 1fr; padding-top: 80px; }
-            #viz-box { order: -1; height: 320px !important; position: relative !important; top: 0 !important; }
-        }
-
+        @media (max-width: 1000px) { #editor-screen { grid-template-columns: 1fr; padding-top: 80px; } #viz-box { order: -1; height: 320px !important; } }
         .ui-panel { background: var(--white); padding: 35px; box-shadow: var(--shadow); border-radius: 4px; }
-        .back-btn { position: fixed; left: 20px; top: 20px; background: var(--white); border: 1px solid #ddd; padding: 10px 20px; cursor: pointer; z-index: 1000; transition: 0.3s; }
-        .back-btn:hover { background: var(--text); color: white; }
-
-        #viz-box { width: 100%; height: 550px; position: sticky; top: 40px; cursor: grab; }
-        
-        .section-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin: 25px 0 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; display: block; }
+        .back-btn { position: fixed; left: 20px; top: 20px; background: var(--white); border: 1px solid #ddd; padding: 10px 20px; cursor: pointer; z-index: 1000; }
+        #viz-box { width: 100%; height: 550px; position: sticky; top: 40px; }
+        .section-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin: 25px 0 10px; border-bottom: 1px solid #eee; display: block; }
         .options-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-        .opt-card { border: 1px solid #eee; padding: 12px; text-align: center; background: #fff; font-size: 0.85rem; flex: 1; min-width: 80px; cursor: pointer; transition: 0.3s; display: block; }
-        input:checked + .opt-card { border-color: var(--gold); color: var(--gold); background: #fdfbf8; font-weight: 600; }
-
-        .final-price { font-size: 2.8rem; font-family: 'Playfair Display'; margin: 30px 0; text-align: center; color: #333; }
-        .btn-order { background: var(--text); color: #fff; width: 100%; padding: 20px; border: none; font-size: 1rem; cursor: pointer; letter-spacing: 1px; transition: 0.3s; }
-        .btn-order:hover { background: #444; }
-
-        textarea { width: 100%; height: 80px; border: 1px solid #eee; padding: 12px; box-sizing: border-box; font-family: inherit; resize: none; outline: none; border-radius: 4px; }
-        .ai-btn { width: 100%; padding: 12px; background: var(--gold); color: white; border: none; cursor: pointer; font-weight: 600; margin-top: 10px; transition: 0.3s; }
-        .ai-btn:hover { background: #b08d4a; }
-
-        footer { margin-top: 60px; padding: 20px; text-align: center; opacity: 0.4; font-size: 0.75rem; width: 100%; border-top: 1px solid #eee; }
-        
-        /* כיווניות שפה */
-        body.en { direction: ltr; }
-        body.he { direction: rtl; }
-        body.en .back-btn { left: auto; right: 20px; }
-        body.en .lang-switch { right: auto; left: 20px; }
+        .opt-card { border: 1px solid #eee; padding: 12px; text-align: center; background: #fff; font-size: 0.85rem; flex: 1; cursor: pointer; display: block; }
+        input:checked + .opt-card { border-color: var(--gold); color: var(--gold); font-weight: 600; }
+        .final-price { font-size: 2.8rem; font-family: 'Playfair Display'; margin: 30px 0; text-align: center; }
+        .btn-order { background: var(--text); color: #fff; width: 100%; padding: 20px; border: none; cursor: pointer; }
+        textarea { width: 100%; height: 80px; border: 1px solid #eee; padding: 12px; box-sizing: border-box; resize: none; }
+        .ai-btn { width: 100%; padding: 12px; background: var(--gold); color: white; border: none; cursor: pointer; margin-top: 10px; font-weight: 600; }
+        footer { margin-top: 60px; padding: 20px; text-align: center; opacity: 0.4; font-size: 0.75rem; border-top: 1px solid #eee; }
+        body.en { direction: ltr; } body.he { direction: rtl; }
     </style>
 </head>
+<body class="he">
+    <button class="lang-switch" onclick="toggleLang()">English / עברית</button>
+    <div id="home-screen">
+        <header>
+            <h1 id="main-title">תהלה אושר</h1>
+            <div class="slogan" id="main-slogan">כאן מגשימים חלומות</div>
+        </header>
+        <div class="main-nav">
+            <div class="category-card" onclick="startDesign('ring')" id="cat-ring">טבעות</div>
+            <div class="category-card" onclick="startDesign('earrings')" id="cat-ear">עגילים</div>
+            <div class="category-card" onclick="startDesign('necklace')" id="cat-neck">שרשראות</div>
+            <div class="category-card" onclick="startDesign('bracelet')" id="cat-brac">צמידים</div>
+        </div>
+        <footer>&copy; 2026 Tehila Osher. <span id="foot-text">כל הזכויות שמורות</span></footer>
+    </div>
+    <div id="editor-screen">
+        <button class="back-btn" onclick="resetToHome()" id="btn-back">← חזרה</button>
+        <div class="ui-panel">
+            <h2 id="edit-title">עיצוב אישי</h2>
+            <span class="section-title" id="lbl-gold">חומר ואיכות</span>
+            <div class="options-grid">
+                <label><input type="radio" name="gold" value="9" checked onchange="refresh()" style="display:none"><span class="opt-card">9K Gold</span></label>
+                <label><input type="radio" name="gold" value="14" onchange="refresh()" style="display:none"><span class="opt-card">14K Gold</span></label>
+                <label><input type="radio" name="gold" value="18" onchange="refresh()" style="display:none"><span class="opt-card">18K Gold</span></label>
+            </div>
+            <span class="section-title" id="lbl-ai">הנחיות AI</span>
+            <textarea id="ai-text" placeholder="תארי את תכשיט החלומות שלך..."></textarea>
+            <button class="ai-btn" onclick="applyAI()" id="btn-ai">עדכן עם AI</button>
+            <div class="final-price" id="total-val">₪ 0</div>
+            <button class="btn-order" id="btn-order">הזמנה לייצור</button>
+        </div>
+        <div id="viz-box"></div>
+    </div><script>
+    let activeLang = 'he', activeType = '', currentThickness = 0.1, currentScale = 1.0;
+    const GOLD_PPG = { "9": 190, "14": 300, "18": 410 };
+    const OPENAI_API_KEY = 'כאן_להדביק_את_המפתח_שלך'; 
+
+    const translations = {
+        he: { title: "תהלה אושר", slogan: "כאן מגשימים חלומות", ring: "טבעות", ear: "עגילים", neck: "שרשראות", brac: "צמידים", back: "← חזרה", edit: "עיצוב אישי", gold: "חומר ואיכות", ai_lbl: "הנחיות AI", ai_btn: "עדכן עם AI", placeholder: "תארי את תכשיט החלומות שלך...", order: "הזמנה לייצור", foot: "כל הזכויות שמורות" },
+        en: { title: "Tehila Osher", slogan: "Dreaming in Jewelry", ring: "Rings", ear: "Earrings", neck: "Necklaces", brac: "Bracelets", back: "Back →", edit: "Custom Design", gold: "Material", ai_lbl: "AI Prompt", ai_btn: "Generate", placeholder: "Describe your dream...", order: "Order Now", foot: "All Rights Reserved" }
+    };
+
+    function toggleLang() { activeLang = activeLang === 'he' ? 'en' : 'he'; document.body.className = activeLang; updateUI(); }
+    function updateUI() {
+        const t = translations[activeLang];
+        document.getElementById('main-title').innerText = t.title; document.getElementById('main-slogan').innerText = t.slogan;
+        document.getElementById('cat-ring').innerText = t.ring; document.getElementById('cat-ear').innerText = t.ear;
+        document.getElementById('cat-neck').innerText = t.neck; document.getElementById('cat-brac').innerText = t.brac;
+        document.getElementById('btn-back').innerText = t.back; document.getElementById('edit-title').innerText = t.edit;
+        document.getElementById('lbl-gold').innerText = t.gold; document.getElementById('lbl-ai').innerText = t.ai_lbl;
+        document.getElementById('btn-ai').innerText = t.ai_btn; document.getElementById('ai-text').placeholder = t.placeholder;
+        document.getElementById('btn-order').innerText = t.order; document.getElementById('foot-text').innerText = t.foot;
+    }
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const vizBox = document.getElementById('viz-box');
+    
+    function initThree() {
+        renderer.setSize(vizBox.clientWidth, 550);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        vizBox.appendChild(renderer.domElement);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+        camera.position.z = 4;
+    }
+
+    const ringMat = new THREE.MeshStandardMaterial({color: 0xc5a059, metalness:1, roughness:0.15});
+    let jewelry = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.1, 32, 100), ringMat);
+    scene.add(jewelry);
+
+    function startDesign(type) {
+        activeType = type;
+        document.getElementById('home-screen').style.display = 'none';
+        document.getElementById('editor-screen').style.display = 'grid';
+        refresh();
+        setTimeout(() => { renderer.setSize(vizBox.clientWidth, 550); }, 50);
+    }
+
+    function resetToHome() { document.getElementById('home-screen').style.display = 'flex'; document.getElementById('editor-screen').style.display = 'none'; }
+
+    function refresh() {
+        const goldK = document.querySelector('input[name="gold"]:checked').value;
+        let weight = { ring: 3.5, earrings: 5.5, necklace: 8, bracelet: 12 }[activeType] * currentScale * (currentThickness / 0.1);
+        document.getElementById('total-val').innerText = `₪${Math.round((weight * GOLD_PPG[goldK] + 1500) * 3).toLocaleString()}`;
+    }
+
+    async function applyAI() {
+        const p = document.getElementById('ai-text').value;
+        if (!p || OPENAI_API_KEY.includes('כאן')) return alert("Missing API Key");
+        vizBox.style.opacity = "0.3";
+        try {
+            const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_API_KEY}` },
+                body: JSON.stringify({
+                    model: "gpt-4o-mini",
+                    messages: [{ role: "system", content: "Return JSON: {color: hex, thickness: 0.05-0.3, scale: 0.8-1.2}" }, { role: "user", content: p }],
+                    response_format: { type: "json_object" }
+                })
+            });
+            const data = await resp.json();
+            const res = JSON.parse(data.choices[0].message.content);
+            if(res.color) ringMat.color.set(res.color);
+            currentThickness = res.thickness || 0.1; currentScale = res.scale || 1.0;
+            jewelry.geometry.dispose(); jewelry.geometry = new THREE.TorusGeometry(0.7, currentThickness, 32, 100);
+            jewelry.scale.set(currentScale, currentScale, currentScale); refresh();
+        } catch (e) { alert("AI Error"); }
+        vizBox.style.opacity = "1";
+    }
+
+    initThree();
+    function animate() { requestAnimationFrame(animate); jewelry.rotation.y += 0.005; renderer.render(scene, camera); }
+    animate();
+</script>
+</body>
+</html>
