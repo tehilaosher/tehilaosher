@@ -115,9 +115,9 @@
         vizBox.style.opacity = "0.5";
         
         try {
-            // פנייה מאובטחת ל-Netlify Function
             const response = await fetch('/.netlify/functions/ai-proxy', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: prompt })
             });
 
@@ -132,7 +132,7 @@
             jewelry.scale.set(currentScale, currentScale, currentScale);
             refresh();
         } catch (e) {
-            alert("שגיאת תקשורת. ודאי שהגדרת את המפתח ב-Netlify ושמרת את התיקייה netlify/functions ב-GitHub.");
+            alert("שגיאת תקשורת. האם יצרת את הקובץ netlify/functions/ai-proxy.js ב-GitHub?");
         } finally {
             vizBox.style.opacity = "1";
         }
