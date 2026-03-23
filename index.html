@@ -27,4 +27,126 @@
         .price-area { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
         .final-price { font-size: 2.8rem; font-family: 'Playfair Display'; margin-bottom: 15px; }
         .btn-order { background: var(--text); color: #fff; width: 100%; padding: 18px; border: none; font-size: 1rem; cursor: pointer; }
-        textarea { width: 100%; height: 80px; border: 1px solid #eee; padding: 12px; box-sizing: border-box; font-family: inherit; resize: none; border-radius: 4px; margin-top
+        textarea { width: 100%; height: 80px; border: 1px solid #eee; padding: 12px; box-sizing: border-box; font-family: inherit; resize: none; border-radius: 4px; margin-top: 10px; }
+        .ai-btn { margin-top: 10px; width: 100%; padding: 15px; background: var(--gold); color: white; border: none; cursor: pointer; font-weight: 600; border-radius: 4px; font-size: 1rem; }
+    </style>
+</head>
+<body>
+
+    <div id="home-screen">
+        <h1 style="font-family: 'Playfair Display'; font-size: 3.5rem; margin: 0;">תהלה אושר</h1>
+        <p style="letter-spacing: 3px; opacity: 0.5; font-size: 0.8rem;">AI JEWELRY STUDIO</p>
+        <div class="main-nav">
+            <div class="category-card" onclick="startDesign('ring')">טבעות</div>
+            <div class="category-card" onclick="startDesign('earrings')">עגילים</div>
+            <div class="category-card" onclick="startDesign('necklace')">שרשראות</div>
+            <div class="category-card" onclick="startDesign('bracelet')">צמידים</div>
+        </div>
+    </div>
+
+    <div id="editor-screen">
+        <button class="back-fixed" onclick="resetToHome()">← חזרה</button>
+        <div class="ui-panel">
+            <h2 id="display-title" style="font-family: 'Playfair Display'; font-size: 2rem;">עיצוב</h2>
+            <div id="dynamic-fields"></div>
+            <span class="section-title">חומר (זהב)</span>
+            <div class="options-grid">
+                <label><input type="radio" name="gold" value="9" checked onchange="refresh()"><span class="opt-card">9K</span></label>
+                <label><input type="radio" name="gold" value="14" onchange="refresh()"><span class="opt-card">14K</span></label>
+                <label><input type="radio" name="gold" value="18" onchange="refresh()"><span class="opt-card">18K</span></label>
+            </div>
+            <span class="section-title">הנחיות ל-AI (למשל: "זהב אדום", "עיצוב דק")</span>
+            <textarea id="ai-text" placeholder="תארי ל-AI איך לשנות את התכשיט..."></textarea>
+            <button class="ai-btn" onclick="applyAI()">עדכן עיצוב עם AI</button>
+            <div class="price-area">
+                <div class="final-price" id="total-val">₪ 0</div>
+                <button class="btn-order">הזמנה לייצור</button>
+            </div>
+        </div>
+        <div id="viz-box"></div>
+    </div>
+
+<script>
+    let activeType = '';
+    let currentThickness = 0.1;
+    let currentScale = 1.0;
+    const GOLD_PPG = { "9": 190, "14": 300, "18": 410 };
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const vizBox = document.getElementById('viz-box');
+    renderer.setSize(vizBox.clientWidth, vizBox.clientWidth); 
+    vizBox.appendChild(renderer.domElement);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+    const ringMat = new THREE.MeshStandardMaterial({color: 0xc5a059, metalness:0.9, roughness:0.1});
+    let jewelry = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.1, 16, 100), ringMat);
+    scene.add(jewelry); camera.position.z = 4;
+
+    function startDesign(type) {
+        activeType = type;
+        document.getElementById('home-screen').style.display = 'none';
+        document.getElementById('editor-screen').style.display = 'grid';
+        updateDynamicFields(type);
+        refresh();
+    }
+
+    function resetToHome() {
+        document.getElementById('home-screen').style.display = 'flex';
+        document.getElementById('editor-screen').style.display = 'none';
+    }
+
+    function updateDynamicFields(type) {
+        const fields = document.getElementById('dynamic-fields');
+        fields.innerHTML = `<span class="section-title">סגנון בסיס</span><div class="options-grid"><label><input type="radio" name="sub" checked onchange="refresh()"><span class="opt-card">קלאסי</span></label><label><input type="radio" name="sub" onchange="refresh()"><span class="opt-card">מודרני</span></label></div>`;
+    }
+
+    function refresh() {
+        const goldK = document.querySelector('input[name="gold"]:checked').value;
+        const baseWeights = { ring: 3.5, earrings: 5.5, necklace: 8, bracelet: 12 };
+        let adjWeight = baseWeights[activeType] * currentScale * (currentThickness / 0.1);
+        let total = (adjWeight * GOLD_PPG[goldK] + 1000) * 3;
+        document.getElementById('total-val').innerText = `₪${Math.round(total).toLocaleString()}`;
+    }
+
+    async function applyAI() {
+        const prompt = document.getElementById('ai-text').value;
+        if (!prompt) return alert("אנא תארי ל-AI מה תרצי לשנות");
+        vizBox.style.opacity = "0.5";
+        
+        try {
+            // פנייה מאובטחת ל-Netlify Function
+            const response = await fetch('/.netlify/functions/ai-proxy', {
+                method: 'POST',
+                body: JSON.stringify({ prompt: prompt })
+            });
+
+            if (!response.ok) throw new Error();
+            const result = await response.json();
+
+            if (result.color) ringMat.color.set(result.color);
+            currentThickness = result.thickness || 0.1;
+            currentScale = result.scale || 1.0;
+            jewelry.geometry.dispose();
+            jewelry.geometry = new THREE.TorusGeometry(0.7, currentThickness, 16, 100);
+            jewelry.scale.set(currentScale, currentScale, currentScale);
+            refresh();
+        } catch (e) {
+            alert("שגיאת תקשורת. ודאי שהגדרת את המפתח ב-Netlify ושמרת את התיקייה netlify/functions ב-GitHub.");
+        } finally {
+            vizBox.style.opacity = "1";
+        }
+    }
+
+    function animate() { requestAnimationFrame(animate); jewelry.rotation.y += 0.01; renderer.render(scene, camera); }
+    animate();
+
+    window.addEventListener('resize', () => {
+        const w = vizBox.clientWidth;
+        renderer.setSize(w, w);
+        camera.aspect = 1;
+        camera.updateProjectionMatrix();
+    });
+</script>
+</body>
+</html>
