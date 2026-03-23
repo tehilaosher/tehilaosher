@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 
 exports.handler = async function(event, context) {
-    // משיכת המפתח מה"כספת" שהגדרת ב-Netlify
     const apiKey = process.env.OPENAI_API_KEY;
     const { prompt } = JSON.parse(event.body);
 
@@ -15,7 +14,7 @@ exports.handler = async function(event, context) {
             body: JSON.stringify({
                 model: "gpt-4o-mini",
                 messages: [
-                    { role: "system", content: "You are a jewelry expert. Return ONLY JSON: {color: hex, thickness: 0.05-0.3, scale: 0.7-1.4}" },
+                    { role: "system", content: "You are a jewelry expert. Return ONLY JSON: {color: hex string, thickness: number 0.05-0.3, scale: number 0.7-1.4}" },
                     { role: "user", content: prompt }
                 ],
                 response_format: { type: "json_object" }
@@ -23,11 +22,9 @@ exports.handler = async function(event, context) {
         });
 
         const data = await response.json();
-        const result = data.choices[0].message.content;
-
         return {
             statusCode: 200,
-            body: result
+            body: data.choices[0].message.content
         };
     } catch (error) {
         return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
